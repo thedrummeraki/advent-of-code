@@ -1,3 +1,7 @@
+mod part1;
+mod part2;
+
 fn main() {
-    println!("Hello, world!");
+    part1::solution();
+    part2::solution();
 }
