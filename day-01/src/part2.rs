@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 #[derive(Debug)]
 enum Digit {
     String(String, u32),
@@ -15,6 +17,7 @@ impl Digit {
 
 pub fn solution() {
     // let str = include_str!("./test-input2.txt");
+    let start = Instant::now();
     let str = include_str!("./input.txt");
     let mut sum = 0;
 
@@ -22,7 +25,8 @@ pub fn solution() {
         sum += detect_all_digits(line);
     }
 
-    println!("[2] Sum: {}", sum);
+    let duration = start.elapsed();
+    println!("[2] Sum: {} ({duration:?})", sum);
 }
 
 fn detect_all_digits(str: &str) -> u32 {
