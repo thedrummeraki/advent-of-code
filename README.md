@@ -1,17 +1,8 @@
-# Advent of code 2023
+# Advent of code
 
-This repository houses my first try at the Advent of code.
+This repository houses all of my advent(ures) of code. The first one I've tried is 2023, but when I'm bored or hungry for more, I'll try the previous years.
 
-### Day 01:
+## Go to...
 
-```
-[1] Sum: 55834 (3.387833ms)
-[2] Sum: 53221 (34.848416ms)
-```
-
-### Day 02:
-
-```
-[1] Sum: 2101 (113.166084ms)
-[2] Sum: 58269 (92.430875ms)
-```
+- [2023](./2023)
+- [2022](./2022)
