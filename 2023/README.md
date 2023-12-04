@@ -19,5 +19,6 @@ This houses my first try at the Advent of code.
 ### Day 03:
 
 ```
-
+[1] Result: 550934 (34.055791ms)
+[2] Result: 81997870 (30.344125ms)
 ```

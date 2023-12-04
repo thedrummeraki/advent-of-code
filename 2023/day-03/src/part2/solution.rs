@@ -1,136 +1,176 @@
-use std::fmt::Debug;
-
-#[derive(Debug, Clone)]
-enum Selection {
-    Rock,
-    Paper,
-    Scissors,
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum Element {
+    Number(u32, usize, usize, usize),
+    Symbol(char, usize, usize),
 }
 
-impl Selection {
-    pub fn from_char(c: char) -> Self {
-        match c {
-            'A' => Self::Rock,
-            'B' => Self::Paper,
-            'C' => Self::Scissors,
-            c => panic!("Invalid selection: {c}"),
-        }
-    }
-
-    pub fn our_choice(&self, c: char) -> Self {
-        match c {
-            'X' => self.lose_to(c),
-            'Y' => self.clone(),
-            'Z' => self.win_to(c),
-            c => panic!("Invalid choice: {c}"),
-        }
-    }
-
-    pub fn wins_against(&self, other: &Self) -> bool {
+impl std::hash::Hash for Element {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         match self {
-            Self::Rock => other.is_scissors(),
-            Self::Paper => other.is_rock(),
-            Self::Scissors => other.is_paper(),
-        }
-    }
-
-    pub fn score(&self) -> u32 {
-        match self {
-            Self::Rock => 1,
-            Self::Paper => 2,
-            Self::Scissors => 3,
-        }
-    }
-
-    fn is_rock(&self) -> bool {
-        match self {
-            Self::Rock => true,
-            _ => false,
-        }
-    }
-
-    fn is_paper(&self) -> bool {
-        match self {
-            Self::Paper => true,
-            _ => false,
-        }
-    }
-
-    fn is_scissors(&self) -> bool {
-        match self {
-            Self::Scissors => true,
-            _ => false,
-        }
-    }
-
-    fn lose_to(&self, c: char) -> Self {
-        if self.is_paper() {
-            Self::Rock
-        } else if self.is_rock() {
-            Self::Scissors
-        } else {
-            Self::Paper
-        }
-    }
-
-    fn win_to(&self, c: char) -> Self {
-        if self.is_paper() {
-            Self::Scissors
-        } else if self.is_rock() {
-            Self::Paper
-        } else {
-            Self::Rock
+            Self::Number(value, x1, x2, y) => {
+                value.hash(state);
+                x1.hash(state);
+                x2.hash(state);
+                y.hash(state);
+            }
+            Self::Symbol(char, x, y) => {
+                char.hash(state);
+                x.hash(state);
+                y.hash(state);
+            }
         }
     }
 }
 
-struct Game {
-    ours: Selection,
-    theirs: Selection,
-}
-
-impl Game {
-    pub fn from_str(str: &str) -> Self {
-        let chars = str.chars().collect::<Vec<_>>();
-        let first_char = chars[0];
-        let last_char = chars[2];
-
-        let theirs = Selection::from_char(first_char);
-        let ours = theirs.our_choice(last_char);
-
-        Self { ours, theirs }
+impl Element {
+    fn is_symbol(&self) -> bool {
+        matches!(self, Element::Symbol(_, _, _))
     }
 
-    pub fn score(&self) -> u32 {
-        if self.ours.wins_against(&self.theirs) {
-            self.ours.score() + 6
-        } else if self.theirs.wins_against(&self.ours) {
-            self.ours.score()
-        } else {
-            self.ours.score() + 3
+    fn is_number(&self) -> bool {
+        matches!(self, Element::Number(_, _, _, _))
+    }
+
+    fn value(&self) -> u32 {
+        match self {
+            Self::Number(value, _, _, _) => *value,
+            _ => panic!("only Numbers have values"),
         }
     }
-}
 
-impl Debug for Game {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(&format!(
-            "US ({:?}) - THEM ({:?}) ==> {}",
-            self.ours,
-            self.theirs,
-            self.score()
-        ))
+    fn char(&self) -> char {
+        match self {
+            Self::Symbol(char, _, _) => *char,
+            _ => panic!("only Symbols have chars"),
+        }
+    }
+
+    fn x(&self) -> usize {
+        match self {
+            Self::Symbol(_, x, _) => *x,
+            _ => panic!("only Symbols have x"),
+        }
+    }
+
+    fn y(&self) -> usize {
+        match self {
+            Self::Symbol(_, _, y) => *y,
+            Self::Number(_, _, _, y) => *y,
+        }
+    }
+
+    fn x_range(&self) -> Vec<usize> {
+        let range = match self {
+            Self::Number(_, x_start, x_end, _) => {
+                let start = if *x_start > 0 { *x_start - 1 } else { 0 };
+                let end = x_end + 2;
+
+                start..end
+            }
+            Self::Symbol(_, x, _) => min(0, *x)..*x,
+        };
+        range.collect()
+    }
+
+    fn is_below(&self, other: &Element) -> bool {
+        let y = self.y();
+        let other_y = other.y();
+
+        return y > 0 && other_y == y - 1;
+    }
+
+    fn is_above(&self, other: &Element) -> bool {
+        let y = self.y();
+        let other_y = other.y();
+
+        return other_y == y + 1;
+    }
+
+    fn is_one_same_line_as(&self, other: &Element) -> bool {
+        return self.y() == other.y();
     }
 }
 
 pub fn execute(input: &str) -> u32 {
-    input
-        .lines()
-        .map(|str| {
-            let game = Game::from_str(str);
-            let score = game.score();
-            println!("Game: {game:?}");
-            score
-        })
-        .sum()
+    let mut elements = Vec::<Element>::new();
+    let mut y = 0;
+    for line in input.lines() {
+        let mut number_buffer = Vec::<char>::new();
+        let mut first_number_index: Option<usize> = None;
+
+        for (x, c) in line.char_indices() {
+            if c.is_numeric() {
+                number_buffer.push(c);
+                if first_number_index.is_none() {
+                    first_number_index = Some(x);
+                }
+            } else {
+                let number_str: String = number_buffer.iter().collect();
+                if !number_str.is_empty() {
+                    let number: u32 = number_str.parse().unwrap_or_default();
+                    elements.push(Element::Number(
+                        number,
+                        first_number_index.unwrap(),
+                        x - 1,
+                        y,
+                    ));
+                    number_buffer.clear();
+                    first_number_index = None;
+                }
+
+                if c != '.' {
+                    elements.push(Element::Symbol(c, x, y));
+                }
+            }
+        }
+        if !number_buffer.is_empty() {
+            let number_str: String = number_buffer.iter().collect();
+            let number: u32 = number_str.parse().unwrap_or_default();
+            elements.push(Element::Number(
+                number,
+                first_number_index.unwrap(),
+                line.chars().count() - 1,
+                y,
+            ));
+        }
+        y += 1;
+    }
+
+    let numbers = elements.iter().filter(|e| e.is_number());
+    let symbols = elements
+        .iter()
+        .filter(|e| e.is_symbol())
+        .collect::<Vec<_>>();
+
+    let mut gear_ratios = Vec::<u32>::new();
+
+    for symbol in symbols.iter() {
+        let mut adjacent_numbers = Vec::<Element>::new();
+        for number in numbers.clone() {
+            if symbol.char() == '*'
+                && (symbol.is_above(number)
+                    || symbol.is_below(number)
+                    || symbol.is_one_same_line_as(number))
+            {
+                if number.x_range().contains(&symbol.x()) {
+                    adjacent_numbers.push(number.clone());
+                }
+            }
+        }
+
+        if adjacent_numbers.len() == 2 {
+            let gear_ratio = adjacent_numbers[0].value() * adjacent_numbers[1].value();
+            gear_ratios.push(gear_ratio);
+        }
+    }
+
+    gear_ratios.iter().sum()
+}
+
+fn min(a: usize, b: usize) -> usize {
+    if a < b {
+        a
+    } else {
+        b
+    }
 }
