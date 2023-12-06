@@ -25,13 +25,13 @@ mod tests {
     fn test_part_1() {
         let input = include_str!("./test.txt");
         let solution = part1::solution::execute(input);
-        assert_eq!(solution, 4361);
+        assert_eq!(solution, 13);
     }
 
     #[test]
     fn test_part_2() {
         let input = include_str!("./test.txt");
         let solution = part2::solution::execute(input);
-        assert_eq!(solution, 467835);
+        assert_eq!(solution, 30);
     }
 }
